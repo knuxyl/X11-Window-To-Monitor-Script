@@ -14,7 +14,7 @@ if [ "${title}" == "" ]; then
 	x=$(("${x}" - "${x_offset}"))
 	y=$(("${y}" - "${y_offset}"))
 fi
-all_monitors=$(xrandr --listmonitors | cut -f 4 -d " " | sed 's/\/.*x/x/g' | sed 's/\/[^+]*+/x/g' | sed 's/+/x/g' | sort | sed '/^$/d' | sed 's/^\(.*\)x\(.*\)x\(.*\)x\(.*\)/\3x\4x\1x\2x/g' | sed 's/x$//g')
+all_monitors=$(xrandr --listmonitors | cut -f 4 -d " " | sed 's/\/.*x/x/g' | sed 's/\/[^+]*+/x/g' | sed 's/+/x/g' | sort | sed '/^$/d' | sed 's/^\(.*\)x\(.*\)x\(.*\)x\(.*\)/\3x\4x\1x\2/g')
 monitors=()
 while read line; do
 	monitors+=("${line}")
