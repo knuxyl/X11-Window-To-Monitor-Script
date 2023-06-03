@@ -26,3 +26,5 @@ direction:
    previous (move window to the previous monitor)
    
    next (move window to the next monitor)
+   
+   The default (no argument) is next.
