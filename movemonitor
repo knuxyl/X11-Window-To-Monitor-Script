@@ -1,0 +1,74 @@
+#!/bin/bash
+if [ "${1}" == "" ]; then
+	a="next"
+else
+	a="${1}"
+fi
+window_id=$(xdotool getactivewindow)
+x=$(xwininfo -id "${window_id}" | awk '/Absolute upper-left X:/ { print $4 }')
+y=$(xwininfo -id "${window_id}" | awk '/Absolute upper-left Y:/ { print $4 }')
+title=$(xwininfo -id "${window_id}" | grep "VLC media player")
+if [ "${title}" == "" ]; then
+	x_offset=$(xwininfo -id "${window_id}" | awk '/Relative upper-left X:/ { print $4 }')
+	y_offset=$(xwininfo -id "${window_id}" | awk '/Relative upper-left Y:/ { print $4 }')
+	x=$(("${x}" - "${x_offset}"))
+	y=$(("${y}" - "${y_offset}"))
+fi
+all_monitors=$(xrandr --listmonitors | cut -f 4 -d " " | sed 's/\/.*x/x/g' | sed 's/\/[^+]*+/x/g' | sed 's/+/x/g' | sort | sed '/^$/d' | sed 's/^\(.*\)x\(.*\)x\(.*\)x\(.*\)/\3x\4x\1x\2x/g' | sed 's/x$//g')
+monitors=()
+while read line; do
+	monitors+=("${line}")
+done <<< "${all_monitors}"
+total_monitors="${#monitors[@]}"
+for (( c=0; c<"${total_monitors}"; c++ )); do
+	i="${monitors["${c}"]}"
+	offset_x=$(echo "${i}" | cut -f 1 -d "x")
+	offset_y=$(echo "${i}" | cut -f 2 -d "x")
+	width=$(echo "${i}" | cut -f 3 -d "x")
+	height=$(echo "${i}" | cut -f 4 -d "x")
+	
+	if [[ ${x} -ge ${offset_x} ]] && [[ ${x} -lt $((${width} + ${offset_x})) ]] && [[ ${y} -ge ${offset_y} ]] && [[ ${y} -lt $((${height} - ${offset_y})) ]]; then
+		display="${c}"
+		if [ "${a}" == "previous" ]; then
+			if [ "${display}" == "0" ]; then
+				next="${monitors[$(("${total_monitors}" - 1))]}"
+			else
+				next="${monitors[$(("${c}" - 1))]}"
+			fi
+		elif [ "${a}" == "next" ]; then
+			if [ "${display}" == $(("${total_monitors}" - 1)) ]; then
+				next="${monitors[0]}"
+			else
+				next="${monitors[$(("${c}" + 1))]}"
+			fi
+		fi
+		break
+	fi
+done
+offset_x=$(echo "${monitors["${display}"]}" | cut -f 1 -d "x")
+offset_y=$(echo "${monitors["${display}"]}" | cut -f 2 -d "x")
+next_offset_x=$(echo "${next}" | cut -f 1 -d "x")
+next_offset_y=$(echo "${next}" | cut -f 2 -d "x")
+next_x=$(("${x}" + "${next_offset_x}" - "${offset_x}"))
+next_y=$(("${y}" + "${next_offset_y}" - "${offset_y}"))
+x_max=$(xprop -id "${window_id}" _NET_WM_STATE | grep '_NET_WM_STATE_MAXIMIZED_HORZ')
+y_max=$(xprop -id "${window_id}" _NET_WM_STATE | grep '_NET_WM_STATE_MAXIMIZED_VERT')
+fullscreen=$(xprop -id "${window_id}" _NET_WM_STATE | grep '_NET_WM_STATE_FULLSCREEN')
+if [ -n "${fullscreen}" ]; then
+	wmctrl -ir "${window_id}" -b toggle,fullscreen
+fi
+wmctrl -ir "${window_id}" -b remove,maximized_vert,maximized_horz
+xdotool windowmove "${window_id}" "${next_x}" "${next_y}"
+add="add"
+if [ -n "${x_max}" ]; then
+	add="${add},maximized_horz"
+fi
+if [ -n "${y_max}" ]; then
+	add="${add},maximized_vert"
+fi
+if [ "${add}" != "add" ]; then
+	wmctrl -ir "${window_id}" -b "${add}"
+fi
+if [ -n "${fullscreen}" ]; then
+	wmctrl -ir "${window_id}" -b toggle,fullscreen
+fi
