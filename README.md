@@ -8,6 +8,7 @@ This was created for XFCE to simulate Gnome's WINDOWS+SHIFT+LEFT|RIGHT window mo
 Features
 
 Supports moving either to previous monitor or next monitor
+
 Supports fullscreen and maximized windows
 
 Dependencies
